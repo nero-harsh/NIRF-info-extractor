@@ -1,88 +1,48 @@
-// Filename - App.js
+import { useState } from 'react';
+import { saveAs } from 'file-saver';
+import './App.css';
 
-import axios from "axios";
+const App = () => {
+  const [file, setFile] = useState(null);
 
-import React, { Component } from "react";
+  const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
+  };
 
-class App extends Component {
-    state = {
-
-        selectedFile: null,
-    };
-
-
-    onFileChange = (event) => {
-
-        this.setState({
-            selectedFile: event.target.files[0],
-        });
-    };
-
-
-    onFileUpload = () => {
-
-        const formData = new FormData();
-
-
-        formData.append(
-            "myFile",
-            this.state.selectedFile,
-            this.state.selectedFile.name
-        );
-
-
-        console.log(this.state.selectedFile);
-
-        axios.post("/", formData);//API URL pettu ikkada
-    };
-
-    fileData = () => {
-        if (this.state.selectedFile) {
-            return (
-                <div>
-                    <h2>File Details:</h2>
-                    <p>
-                        File Name:{" "}
-                        {this.state.selectedFile.name}
-                    </p>
-
-                    <p>
-                        File Type:{" "}
-                        {this.state.selectedFile.type}
-                    </p>
-
-                    <p>
-                        Last Modified:{" "}
-                        {this.state.selectedFile.lastModifiedDate.toDateString()}
-                    </p>
-                </div>
-            );
-        } else {
-            return (
-                <div>
-                    <p>upload the file to extract the info</p>
-                </div>
-            );
-        }
-    };
-
-    render() {
-        return (
-            <div style={{marginLeft:"30%"}}>
-                <h1>the NIRF info extractor</h1>
-                <div >
-                    <input
-                        type="file"
-                        onChange={this.onFileChange}
-                    />
-                    <button onClick={this.onFileUpload}>
-                        Upload pdf
-                    </button>
-                </div>
-                {this.fileData()}
-            </div>
-        );
+  const handleUpload = async () => {
+    if (!file) {
+      alert('Please select a file first!');
+      return;
     }
-}
-// 
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://localhost:8000/convert/', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const blob = await response.blob();
+      saveAs(blob, 'output.csv');
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Failed to upload file');
+    }
+  };
+
+  return (
+    <div className="container">
+      <h1>Upload NIRF PDF</h1>
+      <input type="file" accept="application/pdf" onChange={handleFileChange} />
+      <button onClick={handleUpload}>Upload</button>
+    </div>
+  );
+};
+
 export default App;
